@@ -111,6 +111,11 @@ int add_node_to_list(struct iphdr *piph, int byteslen, struct pkg_list *s) {
 
 //traversal_list by search pointer
 void traversal_list(struct pkg_list *h, struct pkg_list *s) {
+
+  if (!s) {
+    printf("\nNothing catched :(\n");
+	exit(1);
+  }
   s = h;
 
   printf("\n");
