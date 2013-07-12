@@ -1,8 +1,8 @@
 /***********************************************************
  Copyright (C), 2005, Chen Chao
- File name:      linkedlistop.c
+ File name:      printmsg.c
  Author:  Chen Chao      Version: 1.0    Date: 2005.10
- Description:    ipsnatcher程序的输出操作函数实现文件
+ Description:    bcsniffer程序的输出操作函数实现文件
  Others:
  Function List:
  History:
@@ -36,36 +36,6 @@
 #include "../../include/netop.h"
 #include "../../include/printmsg.h"
 
-/*将字符串内容以16进制的方式打印出来
- 输入: *prompt:打印之前的提示信息
- *buf:需要打印的字符串
- len:需要打印的长度*/
-void disp_hex(unsigned char *prompt, unsigned char *buff, int len) {
-  int c, i;
-
-  printf("\n[%s] [Length = %d]\n", prompt, len);
-  c = 0;
-  for (i = 0; i < len; i++) {
-    printf("%2x ", buff[i]);
-    c++;
-    if (!((i + 1) % LINE) || i == len - 1) {
-      int j;
-      if (c != LINE) {
-        for (j = c; LINE - j; j++)
-          printf("   ");
-      }
-      printf(" | ");
-      for (j = 0; j < c; j++) {
-        if (isprint(buff[i-c+j]))
-          printf("%c", buff[i - c + j]);
-        else
-          printf(" ");
-      }
-      printf("\n");
-      c = 0;
-    }
-  }
-}
 
 //输出MAC地址函数
 void print_mac(u_char *sha) {
@@ -92,7 +62,7 @@ void print_time() {
   struct tm *ptm;
   time(&tt);
   ptm = localtime(&tt);
-  printf("%s,%02d:%02d:%02d ", wday[ptm->tm_wday], ptm->tm_hour, ptm->tm_min,
+  printf("Time:[%s,%02d:%02d:%02d] ", wday[ptm->tm_wday], ptm->tm_hour, ptm->tm_min,
       ptm->tm_sec);
 }
 
@@ -121,7 +91,7 @@ void print_arp_rarp(struct ether_arp *p, unsigned int flag) {
 
 //分析tos服务类型
 void printf_ip(struct iphdr *pip) {
-  printf("IP ");	//为了和Time显示在同一行,更醒目
+  printf("IP ");    //为了和Time显示在同一行,更醒目
   printf("\nIP header:%dB ver:%d ttl:%d ", pip->ihl, pip->version, pip->ttl);
   switch (pip->tos) {
   case MINDELAY:
@@ -144,7 +114,7 @@ void printf_ip(struct iphdr *pip) {
     break;
   }
   //从IP协议头中分析协议名字
-  analAboveProto(pip->protocol);
+  get_protocol_name(pip->protocol);
 }
 
 //打印TCP信息
@@ -152,13 +122,13 @@ void printf_tcp(char *p, struct iphdr *pip, struct tcphdr *pt, u_char *d) {
   pt = (struct tcphdr *) p;       //ptcp指向tcp头部
 
   /* inet_ntoa--------将网络二进制的数组转换成网络地址 */
-  printf("\n%s:%d->", inet_ntoa(*(struct in_addr*) &(pip->saddr)),
+  printf("\n[%15s]:[%6d] -> ", inet_ntoa(*(struct in_addr*) &(pip->saddr)),
       ntohs(pt->source));
-  printf("%s:%d ", inet_ntoa(*(struct in_addr*) &(pip->daddr)),
+  printf("[%15s]:[%6d] ", inet_ntoa(*(struct in_addr*) &(pip->daddr)),
       ntohs(pt->dest));
 
-  printf("%-5d ", pt->seq);
-  printf("%-5d ", pt->ack_seq);
+  printf("seq: %10d ", pt->seq);
+  printf("ack_seq: %10d ", pt->ack_seq);
   printf("\n");
 
   d = (u_char *) (p + 4 * pt->doff);
@@ -170,13 +140,13 @@ void printf_tcp(char *p, struct iphdr *pip, struct tcphdr *pt, u_char *d) {
 void printf_udp(char *p, struct iphdr *pip, struct udphdr *pu, u_char *d) {
   pu = (struct udphdr *) p;        //ptcp指向udp头部
 
-  printf("\n%s:%d->", inet_ntoa(*(struct in_addr*) &(pip->saddr)),
+  printf("\n[15%s]:[%6d] -> ", inet_ntoa(*(struct in_addr*) &(pip->saddr)),
       ntohs(pu->source));
-  printf("%s:%d\n", inet_ntoa(*(struct in_addr*) &(pip->daddr)),
+  printf("[%15s]:[%6d]\n", inet_ntoa(*(struct in_addr*) &(pip->daddr)),
       ntohs(pu->dest));
 
   d = (u_char *) (p + 8);
-  disp_hex("UDP:", d, ntohs(pu->len));
+  disp_hex("UDP: ", d, ntohs(pu->len));
   printf("\n");
 }
 

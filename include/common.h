@@ -22,16 +22,20 @@ extern "C" {
 //#define _DEBUG
 #endif
 
-struct statTable {
-  u_char sip[16];        //源IP
-  u_char dip[16];        //目的IP
-  u_int32_t bcount;         //字节总量
-  u_int32_t packcount;      //包总量
-  struct statTable *next;
+#define LINE  16
+
+struct pkg_list {
+  u_char sip[16];        //source IP
+  u_char dip[16];        //destination IP
+  u_int32_t bcount;      //字节总量
+  u_int32_t packcount;   //包总量
+  struct pkg_list *next;
 };
 
-void ShowUsage();
-void showErr(char *why, int n);
+void disp_hex(unsigned char *prompt, unsigned char *buff, int len);
+int convert_to_digital(char *optarg, int optarglen, long *value);
+int str_to_upper(char * str);
+void print_msg_for_last_errno(char *msg, int n);
 
 #ifdef __cplusplus
 }

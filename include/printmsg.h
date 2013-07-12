@@ -15,9 +15,6 @@
 #define MINCOST       0x04
 #endif 
 
-#define LINE	16
-
-void disp_hex(unsigned char *prompt, unsigned char *buff, int len);
 void print_mac(u_char *sha);
 void print_ipaddr(u_char *ipadd);
 void print_time();

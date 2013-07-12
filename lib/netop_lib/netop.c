@@ -2,7 +2,7 @@
  Copyright (C), 2005, Chen Chao
  File name:      netop.c
  Author:  Chen Chao      Version: 1.0    Date: 2005.10
- Description:    ipsnatcher程序的网络操作函数实现文件
+ Description:    bcsniffer程序的网络操作函数实现文件
  Others:
  History:
  1. Date:06-02-13
@@ -30,24 +30,25 @@ int set_promisc(char *nif, int sock) {
 
   //ifr.ifr_name----- Interface name, e.g. "eth0".
   strncpy(ifr.ifr_name, nif, strlen(nif) + 1);
-  if ((ioctl(sock, SIOCGIFFLAGS, &ifr) == -1)) //获得flag
-  {
-    showErr("ioctl", 2);
+  if ((ioctl(sock, SIOCGIFFLAGS, &ifr) == -1)) { //获得flag
+    print_msg_for_last_errno("ioctl", 2);
   }
 
-  ifr.ifr_flags |= IFF_PROMISC;               //重置flag标志
+  ifr.ifr_flags |= IFF_PROMISC;                  //重置flag标志
 
-  if (ioctl(sock, SIOCSIFFLAGS, &ifr) == -1)  //改变模式
-      {
-    showErr("ioctl", 3);
+  if (ioctl(sock, SIOCSIFFLAGS, &ifr) == -1) {   //改变模式
+
+    print_msg_for_last_errno("ioctl", 3);
   }
-  else
-    printf("\nModify eth0 to promisc success！\n");
+  else {
+    printf("\nModify eth0 to promisc success!\n");
+  }
+
   return 0;
 }
 
 //计算效验和函数
-u_int16_t checksumip(u_int16_t *buffer, int size) {
+u_int16_t checksum_ip(u_int16_t *buffer, int size) {
   unsigned long cksum = 0;
 
   while (size > 1) {
@@ -65,11 +66,11 @@ u_int16_t checksumip(u_int16_t *buffer, int size) {
 }
 
 //由IP头中protocol元素的值获得协议名称
-int analAboveProto(int numProto) {
+int get_protocol_name(int numProto) {
   struct protoent *protocol;
   protocol = getprotobynumber(numProto);
   if (protocol == (struct protoent *) NULL ) {
-    perror("Analyses the protocol failed!");
+    perror("Analyse the protocol failed!");
     return -1;
   }
   //printf("%s %s ", protocol->p_name, protocol->p_aliases[0]);

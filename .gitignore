@@ -1,0 +1,17 @@
+Makefile
+Makefile.in
+*.so
+*.0
+*.[oa]
+*.in
+*.log
+*.la
+*.li
+*.lo
+*.lai
+*.[bB]
+autom4te.cache
+.deps
+.libs 
+
+/Debug
