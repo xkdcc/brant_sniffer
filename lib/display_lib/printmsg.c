@@ -70,13 +70,13 @@ void print_time() {
 void print_arp_rarp(struct ether_arp *p, unsigned int flag) {
   switch (flag) {
   case ETHERTYPE_ARP:
-    printf("ARP ");
+    printf("Protocol:[ARP] ");
     break;
   case ETHERTYPE_REVARP:
-    printf("RARP ");
+    printf("Protocol:[RARP] ");
     break;
   default:
-    printf("Unkown package!\n");
+    printf("Unknown protocol!\n");
     return;
   }
   print_mac((u_char *) &(p->arp_sha));
@@ -90,9 +90,9 @@ void print_arp_rarp(struct ether_arp *p, unsigned int flag) {
 }
 
 //分析tos服务类型
-void printf_ip(struct iphdr *pip) {
-  printf("IP ");    //为了和Time显示在同一行,更醒目
-  printf("\nIP header:%dB ver:%d ttl:%d ", pip->ihl, pip->version, pip->ttl);
+void printf_ip_header(struct iphdr *pip) {
+  printf("Protocol:[IP] ");    //为了和Time显示在同一行,更醒目
+  printf("\nIP header:[%d Byte] ver:[%d] ttl:[%d] ", pip->ihl, pip->version, pip->ttl);
   switch (pip->tos) {
   case MINDELAY:
     printf("Minidelay ");
@@ -118,35 +118,52 @@ void printf_ip(struct iphdr *pip) {
 }
 
 //打印TCP信息
-void printf_tcp(char *p, struct iphdr *pip, struct tcphdr *pt, u_char *d) {
+void printf_tcp(char *p, struct iphdr *piph, Boolean print_data) {
+  struct tcphdr *pt;          //TCP头结构
+  u_char *d;
+
+  d = NULL;
   pt = (struct tcphdr *) p;       //ptcp指向tcp头部
 
   /* inet_ntoa--------将网络二进制的数组转换成网络地址 */
-  printf("\n[%15s]:[%6d] -> ", inet_ntoa(*(struct in_addr*) &(pip->saddr)),
+  printf("\n[%15s]:[Port: %-6d] -> ", inet_ntoa(*(struct in_addr*) &(piph->saddr)),
       ntohs(pt->source));
-  printf("[%15s]:[%6d] ", inet_ntoa(*(struct in_addr*) &(pip->daddr)),
+  printf("[%15s]:[Port: %-6d] ", inet_ntoa(*(struct in_addr*) &(piph->daddr)),
       ntohs(pt->dest));
 
-  printf("seq: %10d ", pt->seq);
-  printf("ack_seq: %10d ", pt->ack_seq);
+  printf("seq:[%10d] ", pt->seq);
+  printf("ack_seq:[%10d] ", pt->ack_seq);
   printf("\n");
 
+  // doff是TCP包头/4，即实际的TCP报头长度为doff*4
   d = (u_char *) (p + 4 * pt->doff);
   //TCP携带的数据长度,不删除这行的原因使为了以后不用查就知道如何计算TCP的数据长度
-  //printf("%dB\n\n",ntohs(pip->tot_len)-4*pip->ihl-4*pt->doff);
+  //tot_len表示IP包总长（Total Length）：长度16比特。
+  //以字节为单位计算的IP包的长度 (包括头部和数据)，所以IP包最大长度65535字节。
+  //IP包总长-IP报头-TCP报头，就是TCP携带的数据长度
+  if (print_data) {
+    disp_hex("TCP:", d, ntohs(piph->tot_len)-4*piph->ihl-4*pt->doff);
+  }
+  printf("\n");
 }
 
 //打印UDP信息
-void printf_udp(char *p, struct iphdr *pip, struct udphdr *pu, u_char *d) {
+void printf_udp(char *p, struct iphdr *piph, Boolean print_data) {
+  struct udphdr *pu;          //UDP头结构
+  u_char *d;
+
+  d = NULL;
   pu = (struct udphdr *) p;        //ptcp指向udp头部
 
-  printf("\n[15%s]:[%6d] -> ", inet_ntoa(*(struct in_addr*) &(pip->saddr)),
+  printf("\n[15%s]:[Port: %-6d] -> ", inet_ntoa(*(struct in_addr*) &(piph->saddr)),
       ntohs(pu->source));
-  printf("[%15s]:[%6d]\n", inet_ntoa(*(struct in_addr*) &(pip->daddr)),
+  printf("[%15s]:[Port: %-6d]\n", inet_ntoa(*(struct in_addr*) &(piph->daddr)),
       ntohs(pu->dest));
 
   d = (u_char *) (p + 8);
-  disp_hex("UDP: ", d, ntohs(pu->len));
+  if (print_data) {
+    disp_hex("UDP: ", d, ntohs(pu->len));
+  }
   printf("\n");
 }
 

@@ -14,6 +14,12 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+enum True_False {
+  TRUE = 1, FALSE = 0
+};
+typedef enum True_False Boolean;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,10 +31,12 @@ extern "C" {
 #define LINE  16
 
 struct pkg_list {
-  u_char sip[16];        //source IP
-  u_char dip[16];        //destination IP
-  u_int32_t bcount;      //字节总量
-  u_int32_t packcount;   //包总量
+  u_char s_ip[16];        //source IP
+  u_char d_ip[16];        //destination IP
+  u_int32_t s_port;
+  u_int32_t d_port;
+  u_int32_t total_byte_size;      //两个IP发送的总字节总量
+  u_int32_t package_amount;   //包数量
   struct pkg_list *next;
 };
 

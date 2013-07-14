@@ -21,15 +21,11 @@ typedef union _node {
   int protocol;
   unsigned long interval;
   unsigned long endcount;
+  Boolean  print_data;    //print_data 不需要赋值，这里只是占位符，为了对称而已。
 } node;
 
-enum Trur_False {
-  TRUE = 1, FALSE = 0
-};
-typedef enum Trur_False Boolean;
-
 typedef struct _cmd_opt {
-  node rightopt;    //存储对应参数的值
+  node rightopt;    //存储对应参数的值，如果参数不需要赋值，就不会放入node结构体
   Boolean status;   //被赋值则为TRUE，否则FALSE
 } Cmd_Opt;
 

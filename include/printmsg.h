@@ -19,8 +19,8 @@ void print_mac(u_char *sha);
 void print_ipaddr(u_char *ipadd);
 void print_time();
 void print_arp_rarp(struct ether_arp *p, unsigned int flag);
-void printf_ip(struct iphdr *pip);
-void printf_tcp(char *p, struct iphdr *pip, struct tcphdr *pt, u_char *d);
-void printf_udp(char *p, struct iphdr *pip, struct udphdr *pu, u_char *d);
+void printf_ip_header(struct iphdr *pip);
+void printf_tcp(char *p, struct iphdr *pip, Boolean print_data);
+void printf_udp(char *p, struct iphdr *pip, Boolean print_data);
 
 #endif

@@ -47,7 +47,7 @@ int set_promisc(char *nif, int sock) {
   return 0;
 }
 
-//计算效验和函数
+//计算checksum函数
 u_int16_t checksum_ip(u_int16_t *buffer, int size) {
   unsigned long cksum = 0;
 

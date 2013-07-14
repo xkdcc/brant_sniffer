@@ -2,7 +2,7 @@
  Copyright (C), 2007-2010, Brant Chen (xkdcc@163.com, brantchen2008@gmail.com).
  Program Name:        bcsniffer
  Program Desc:        Similar to other sniffer but with some great features for
-                      my sake :)
+ my sake :)
  File name:           bcsniffer.c
  Author:              Brant Chen (brantchen2008@gmail.com)
  Version:             1.0.2
@@ -23,9 +23,8 @@
 
  TODO:
  (1)指定网卡进行监听，即实现-i
- (2)把链表按协议号分类,再根据地址进行统计.
- 现在的状况是,如果是ICMP之类协议只有一个地址的,没有统计流量
- (3)实现-p
+ (2)把端口号加入最后的statistic。
+ (3)Review checksum_ip
 
  History:
  1.     Date:    2006-02-10
@@ -54,7 +53,7 @@
  4.     Date:    2013-07-11
  Author:  Brant Chen
  Modification:
- 1) Change ipsnatchter to bcsniffer
+ 1) Change program name from ipsnatchter to bcsniffer.
  2) Fix some Makefile bugs and compile successfully on Ubuntu 12.04 LTS.
  3) Using git for version control.
 
@@ -98,20 +97,22 @@ struct pkg_list *head;
 struct pkg_list *search;         //(1)标识找到的位置 (2)用于开辟新节点的变量
 struct pkg_list *tail;           //尾指针始终指向最后一个节点
 
-Cmd_Opt opts[3];                 //有多少个需要赋值的参数就有多少个opts
+Cmd_Opt opts[4];                 //有多少个需要设置的参数就有多少个opts
 
 void show_usage() {
   printf("\nUsage:./bcsniffer [Option] ... [Value]...\n"
-"-p --protocol <TCP|UDP|ICMP> \n"
-"   specify protocol to catch.\n"
-"-e --interval <Interval> \n"
-"   output linked list when finish snatching packages by default.\n"
-"-n --endcount <Endcount> \n"
-"   exit when specified how many packages user want. \n"
-"   bcsniffer wont't stop by default if without -n.\n \n");
+      "-p --protocol <TCP|UDP|ICMP> \n"
+      "   specify protocol to catch.\n"
+      "-e --interval <Interval> \n"
+      "   output linked list when finish snatching packages by default.\n"
+      "-n --endcount <Endcount> \n"
+      "   exit when specified how many packages user want. \n"
+      "   bcsniffer wont't stop by default if without -n.\n"
+      "-x --display \n"
+      "   display the TCP/UDP data in hex and printable characters. \n\n");
 }
 
-//判断参数携带的值是否合法,并对全局变量opts进行赋值
+//判断参数携带的值(存放在*optarg中)是否合法,并对全局变量opts进行赋值
 //返回；成功：0   失败：-1；
 int set_value_from_cmd(char *optarg, int *option_index, Cmd_Opt opts[]) {
   //把所有show_usage放在GetCommondLine中
@@ -121,14 +122,13 @@ int set_value_from_cmd(char *optarg, int *option_index, Cmd_Opt opts[]) {
   //(1)要根据携带的参数进行合法检验，避免出现./bcsniffer --protocol --interval的情况！！！
   //如：如果参数需要是数字，则遍历参数，判断是否在字符0~9的范围内，能否转换为合法数字；否则非法
   //option_index为0时,不进行数字验证,因为是协议名称字符串
-  if (*option_index != 0) {
+  if (*option_index != 0 && optarg != NULL) {
     /*#ifdef _DEBUG
      printf("argument:%d\n", atoi(optarg));
      #endif*/
 
     ret = convert_to_digital(optarg, strlen(optarg), &value);
-    if (ret == -1)        //不能转化为合法数字
-        {
+    if (ret == -1) {       //不能转化为合法数字
       printf("\n convert to digital result =%c or %d\n", ret, ret);
       return -1;
     }
@@ -137,12 +137,18 @@ int set_value_from_cmd(char *optarg, int *option_index, Cmd_Opt opts[]) {
     /*#ifdef _DEBUG
      printf("argument:%s\n", optarg);
      #endif*/
+    if (*option_index==3) { // means "-x" option
+      opts[3].status = TRUE;
+      opts[3].rightopt.print_data = TRUE;
+    }
+    return 0;
   }
 
   //对传入的参数进行赋值
-  //同时:(2)避免出现相同意义的选项以长选项和短选项的方式同时出现,处理方法:设置数据结构中的status元素.
+  //同时:(2)避免出现相同意义的选项以长选项和短选项的方式同时出现,
+  //处理方法:设置数据结构中的status元素.
   //其实，对于本程序每个参数都要带数值参数来说，步骤(1)已经避免了(2)需要预防的情况
-  //只有当所跟的参数值不要求是数字，而可能与-或者--混淆时，(2)才显示出(2)的需要
+  //只有当所跟的参数值不要求是数字，而可能与-或者--混淆时，第二点才显示出他的作用
   str_to_upper(optarg);
   switch (*option_index) {
   case 0:
@@ -226,6 +232,8 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
   opts[1].status = FALSE;
   opts[2].rightopt.endcount = 100;
   opts[2].status = FALSE;
+  opts[3].rightopt.print_data = FALSE; //Don't print the data in package by default
+  opts[3].status = FALSE;
 
   opterr = 0; //使系统不自动打印参数错误的信息
   optind = 0;
@@ -233,11 +241,7 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
   /*每个程序都需要*/
   if (argc == 1) {
     *pNoopt = TRUE;
-    //对所有参数赋默认值
-    opts[0].rightopt.protocol = DEFAULTPROTO_ALL;
-    opts[0].status = TRUE;
-    opts[1].rightopt.interval = 10;
-    opts[1].status = TRUE;
+    //对相关参数赋默认值
     opts[2].rightopt.endcount = 0; //不断抓包
     opts[2].status = TRUE;
 
@@ -249,8 +253,9 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
   while (opt_loop_count < argc - 1) {
 
     static struct option long_options[] = { { "protocol", 1, 0, 0 }, {
-        "interval", 1, 0, 0 }, { "count", 1, 0, 0 }, { 0, 0, 0, 0 } };
-    c = getopt_long(argc, argv, "p:e:n:?h", long_options, &option_index);
+        "interval", 1, 0, 0 }, { "count", 1, 0, 0 }, { "display", 0, 0, 0 },
+        { 0, 0, 0, 0 } };
+    c = getopt_long(argc, argv, "p:e:n:x?h", long_options, &option_index);
 
     //用于判断不匹配的长选项。当有不匹配的长选项时，option_index为-1，
     //但是当为匹配或不匹配的短选项时，option_index仍是-1。所以要额外判断是否匹配短选项
@@ -285,7 +290,7 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
        printf ("option %s.option_index:%d", long_options[option_index].name, option_index);
        #endif*/
 
-      //判断参数携带的值是否合法
+      //判断参数携带的值是否合法并赋值
       ret = set_value_from_cmd(optarg, &option_index, opts);
       if (ret) {
         show_usage();
@@ -349,6 +354,23 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
        printf ("\n");*/
 
       break;
+    case 'x':
+      //#ifdef DEBUG
+      printf ("option x, optarg:%s, option_index:%d", optarg, option_index);
+       //#endif
+
+      option_index = 3;
+      ret = set_value_from_cmd(optarg, &option_index, opts);
+      if (ret) {
+        show_usage();
+        exit(1);
+      }
+
+      /*if (optarg)            //需要放在合法判断之后
+       printf ("%s", optarg);
+       printf ("\n");*/
+
+      break;
     case '?': /*每个程序都需要*/        //如果遇到不匹配的短选项或者‘？’
     case 'h': /*每个程序都需要*/
     default: /*每个程序都需要*/
@@ -385,7 +407,7 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
 
 //超时后，没有抓到包时输出的信息。
 void print_msg_while_catch_nothing(int signo) {
-  int ret=0;
+  int ret = 0;
   if (catch_count_in_alarm == 0) {
     ret = system("echo -n .");
   }
@@ -406,8 +428,8 @@ void before_interupt(int signo) {
 void print_tcp_in_detail(const int len, struct ip *p1, struct iphdr *p2,
     struct tcphdr *p3) {
   printf("r:%d\n", len);
-  printf("ether_header:%ld\n", sizeof(struct ether_header));
-  printf("ethhdr:%ld\n", sizeof(struct ethhdr));
+  printf("ether_header:%ld\n", (long int)sizeof(struct ether_header));
+  printf("ethhdr:%ld\n", (long int)sizeof(struct ethhdr));
   printf("ip->ip_len:%d\n", p1->ip_len);
   printf("ntohs(ip->ip_len):%d\n", ntohs(p1->ip_len));
   printf("iph->tot_len:%d\n", p2->tot_len);
@@ -418,8 +440,8 @@ void print_tcp_in_detail(const int len, struct ip *p1, struct iphdr *p2,
 //输出调试信息
 void print_udp_in_detail(const int len, struct ip *p1, struct iphdr *p2) {
   printf("r:%d\n", len);
-  printf("ether_header:%ld\n", sizeof(struct ether_header));
-  printf("ethhdr:%ld\n", sizeof(struct ethhdr));
+  printf("ether_header:%ld\n", (long int)sizeof(struct ether_header));
+  printf("ethhdr:%ld\n", (long int)sizeof(struct ethhdr));
   printf("ip->ip_len:%d\n", p1->ip_len);
   printf("ntohs(ip->ip_len):%d\n", ntohs(p1->ip_len));
   printf("piph->tot_len:%d\n", p2->tot_len);
@@ -432,8 +454,6 @@ int main(int argc, char *argv[]) {
   struct ether_arp *parph;      //ARP报头
   struct ip *pip;
   struct iphdr *piph;           //IP头结构
-  struct tcphdr *ptcp;          //TCP头结构
-  struct udphdr *pudp;          //UDP头结构
 
   Boolean noopt = FALSE;          //记录程序执行是否带有命令行参数,没有则按照默认参数配置执行
 
@@ -448,8 +468,7 @@ int main(int argc, char *argv[]) {
   int len;                      //sizeof(addr)，取地址用于recv中
   char *ptemp;                  //重要的指针！
   unsigned int ptype;           //判断层次协议类型变量（如ARP或者IP）
-  u_char * data;                //数据包数据指针
-  int ret=0;
+  int ret = 0;
 
   struct sigaction sig_interrupt_action;
   struct sigaction sig_alarm_action;
@@ -530,9 +549,9 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    printf("\n%ld ", ++count);
+    printf("\n[%3ld] ", ++count);
     print_time();
-    printf("%8dB ", r);
+    printf("Package total length:[%d Byte] ", r);
 
     ptemp = buf;             //初始化指针ptemp
     peth = (struct ether_header *) ptemp;
@@ -543,18 +562,14 @@ int main(int argc, char *argv[]) {
       parph = (struct ether_arp *) (ptemp + sizeof(struct ether_header));
       print_arp_rarp(parph, ptype);
     }
-    else if (ptype == ETHERTYPE_IP) {              //如果是IP数据包
-      ptemp += sizeof(struct ether_header);        //指针后移ether_header的长度
+    else if (ptype == ETHERTYPE_IP) {       //如果是IP数据包
+      ptemp += sizeof(struct ether_header); //指针后移ether_header的长度，4字节
       pip = (struct ip *) ptemp;
-      piph = (struct iphdr *) ptemp;               //piph指向ip层的头
+      piph = (struct iphdr *) ptemp;        //piph指向ip层的头
       //打印ip头信息
-      printf_ip(piph);
-      printf("checksum %d ", checksum_ip((u_int16_t *) pip, 4 * pip->ip_hl));
-
-      //id， 识别IP数据报的编号，标识字段唯一地标识主机发送的每一份
-      //数据报。通常每发送一份报文它的值就会加1
-      //frag_off;     3/16 1位为0表示有碎块，2位为0表示是最后的碎块，3位为1表示接
-      //收中13/8 分片在原分组中的位置，以上两个值未作分析，至此分析完IP头的字段
+      printf_ip_header(piph);
+      //printf("struct ip ip_sum:%d\n", pip->ip_sum);
+      //printf("checksum %d ", checksum_ip((u_int16_t *) pip, 4 * pip->ip_hl));
 
       /*#ifdef _DEBUG
        printf("Before add!\n");
@@ -562,7 +577,7 @@ int main(int argc, char *argv[]) {
        printf("show inet_ntoa(*(struct in_addr*)&(piph->daddr)):%s\n", inet_ntoa(*(struct in_addr*)&(piph->daddr)));
        #endif  */
 
-      //对statTable结构表进行操作
+      //对pkg_list链表进行操作
       //首先进行查找，传递头指针
       //查找函数中判断了链表是否为空，为空肯定没找到，返回-1，找到返回0
       if (!search_ip_in_list(piph, (struct pkg_list **) &search, head)) {
@@ -591,7 +606,12 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      ptemp += (piph->ihl << 2);                //移动ptemp到iph结构后
+      //ihl即IP header length
+      //<<2相当于乘以4，为什么ptemp要移到ihl*4的位置？
+      //哦也，对了！因为ihl是4bit，最大是二进制1111，即十进制15。
+      //而每个1代表4Byte，所以IP包头的最大长度是15*4=60字节。
+      //参见http://blog.csdn.net/achejq/article/details/7040687
+      ptemp += (piph->ihl << 2);
 
       switch (piph->protocol)                   //根据不同协议判断指针类型
       {
@@ -599,14 +619,14 @@ int main(int argc, char *argv[]) {
 #ifdef _DEBUG
         //print_tcp_in_detail(r, pip, piph, ptcp);
 #endif
-        printf_tcp(ptemp, piph, ptcp, data);
+        printf_tcp(ptemp, piph, opts[3].rightopt.print_data);
         break;
 
       case IPPROTO_UDP:
 #ifdef _DEBUG
         //print_udp_in_detail(r, pip, piph);
 #endif
-        printf_udp(ptemp, piph, pudp, data);
+        printf_udp(ptemp, piph, opts[3].rightopt.print_data);
         break;
 
       case IPPROTO_ICMP:
@@ -618,12 +638,12 @@ int main(int argc, char *argv[]) {
         break;
 
       default:
-        printf("Unkown protocol %d\n", piph->protocol);
+        printf("Unknown protocol %d\n", piph->protocol);
         break;
       }                   //end switch
     }                   //end if
     else
-      printf("\nUnkown package,protocol type:%d\n", ptype);
+      printf("\nUnknown package,protocol type:%d\n", ptype);
 
     //判断interval参数
     if ((opts[1].rightopt.interval != 0)
@@ -639,12 +659,9 @@ int main(int argc, char *argv[]) {
       }
       exit(0);
     }
-    sleep(1);
+    //sleep(1);
     blb = 0;
-  }//end for
+  }                   //end for
   printf("\n");
 }
-
-
-
 

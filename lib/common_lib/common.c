@@ -2,7 +2,7 @@
  Copyright (C), 2005, Chen Chao
  File name:      common.c
  Author:  Chen Chao      Version: 1.0    Date: 2005.10
- Description:    ipsnatcher程序的公共函数实现文件
+ Description:    bcsniffer程序的公共函数实现文件
  Others:
  Function List:
  History:
