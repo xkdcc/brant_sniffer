@@ -19,7 +19,6 @@ enum True_False {
 };
 typedef enum True_False Boolean;
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,14 +29,14 @@ extern "C" {
 
 #define LINE  16
 
-struct pkg_list {
+struct node {
   u_char s_ip[16];        //source IP
   u_char d_ip[16];        //destination IP
-  u_int32_t s_port;
-  u_int32_t d_port;
-  u_int32_t total_byte_size;      //两个IP发送的总字节总量
+  u_int16_t s_port;
+  u_int16_t d_port;
+  u_int32_t total_byte_size;  //两个IP发送的总字节总量
   u_int32_t package_amount;   //包数量
-  struct pkg_list *next;
+  struct node *next;
 };
 
 void disp_hex(unsigned char *prompt, unsigned char *buff, int len);

@@ -13,15 +13,10 @@
  2. ...
  **************************************************************/
 
-#ifdef _DEBUG
-#undef _DEBUG
-#endif
-
 #include <stdlib.h>        //包含UNIX的类型定义等，如u_char/u_int32_t
 #include <stdio.h>
 
 #include "../../include/common.h"
-
 
 /*将字符串内容以16进制的方式打印出来
  输入: *prompt:打印之前的提示信息
@@ -43,7 +38,7 @@ void disp_hex(unsigned char *prompt, unsigned char *buff, int len) {
       }
       printf(" | ");
       for (j = 0; j < c; j++) {
-        if (isprint(buff[i-c+j]))
+        if (isprint(buff[i - c + j]))
           printf("%c", buff[i - c + j]);
         else
           printf(" ");
@@ -78,7 +73,6 @@ int str_to_upper(char * str) {
   }
   return 0;
 }
-
 
 /*出错信息*/
 void print_msg_for_last_errno(char *msg, int n) {

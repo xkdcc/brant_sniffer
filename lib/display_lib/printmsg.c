@@ -18,10 +18,6 @@
  (2)增加disp_hex函数
  **************************************************************/
 
-#ifdef _DEBUG
-#undef _DEBUG
-#endif
-
 #include <stdlib.h>                  //包含UNIX的类型定义等，如u_char/u_int32_t
 #include <stdio.h>
 #include <stdio.h>
@@ -35,7 +31,6 @@
 #include "../../include/common.h"
 #include "../../include/netop.h"
 #include "../../include/printmsg.h"
-
 
 //输出MAC地址函数
 void print_mac(u_char *sha) {
@@ -62,8 +57,8 @@ void print_time() {
   struct tm *ptm;
   time(&tt);
   ptm = localtime(&tt);
-  printf("Time:[%s,%02d:%02d:%02d] ", wday[ptm->tm_wday], ptm->tm_hour, ptm->tm_min,
-      ptm->tm_sec);
+  printf("Time:[%s,%02d:%02d:%02d] ", wday[ptm->tm_wday], ptm->tm_hour,
+      ptm->tm_min, ptm->tm_sec);
 }
 
 //打印arp或rarp信息
@@ -92,7 +87,8 @@ void print_arp_rarp(struct ether_arp *p, unsigned int flag) {
 //分析tos服务类型
 void printf_ip_header(struct iphdr *pip) {
   printf("Protocol:[IP] ");    //为了和Time显示在同一行,更醒目
-  printf("\nIP header:[%d Byte] ver:[%d] ttl:[%d] ", pip->ihl, pip->version, pip->ttl);
+  printf("\nIP header:[%d Byte] ver:[%d] ttl:[%d] ", pip->ihl, pip->version,
+      pip->ttl);
   switch (pip->tos) {
   case MINDELAY:
     printf("Minidelay ");
@@ -107,10 +103,6 @@ void printf_ip_header(struct iphdr *pip) {
     printf("Minicost ");
     break;
   default:
-#ifdef _DEBUG
-    //printf("None bit of the tos set!\n");
-#endif
-
     break;
   }
   //从IP协议头中分析协议名字
@@ -126,8 +118,8 @@ void printf_tcp(char *p, struct iphdr *piph, Boolean print_data) {
   pt = (struct tcphdr *) p;       //ptcp指向tcp头部
 
   /* inet_ntoa--------将网络二进制的数组转换成网络地址 */
-  printf("\n[%15s]:[Port: %-6d] -> ", inet_ntoa(*(struct in_addr*) &(piph->saddr)),
-      ntohs(pt->source));
+  printf("\n[%15s]:[Port: %-6d] -> ",
+      inet_ntoa(*(struct in_addr*) &(piph->saddr)), ntohs(pt->source));
   printf("[%15s]:[Port: %-6d] ", inet_ntoa(*(struct in_addr*) &(piph->daddr)),
       ntohs(pt->dest));
 
@@ -142,7 +134,7 @@ void printf_tcp(char *p, struct iphdr *piph, Boolean print_data) {
   //以字节为单位计算的IP包的长度 (包括头部和数据)，所以IP包最大长度65535字节。
   //IP包总长-IP报头-TCP报头，就是TCP携带的数据长度
   if (print_data) {
-    disp_hex("TCP:", d, ntohs(piph->tot_len)-4*piph->ihl-4*pt->doff);
+    disp_hex("TCP:", d, ntohs(piph->tot_len) - 4 * piph->ihl - 4 * pt->doff);
   }
   printf("\n");
 }
@@ -155,8 +147,8 @@ void printf_udp(char *p, struct iphdr *piph, Boolean print_data) {
   d = NULL;
   pu = (struct udphdr *) p;        //ptcp指向udp头部
 
-  printf("\n[15%s]:[Port: %-6d] -> ", inet_ntoa(*(struct in_addr*) &(piph->saddr)),
-      ntohs(pu->source));
+  printf("\n[15%s]:[Port: %-6d] -> ",
+      inet_ntoa(*(struct in_addr*) &(piph->saddr)), ntohs(pu->source));
   printf("[%15s]:[Port: %-6d]\n", inet_ntoa(*(struct in_addr*) &(piph->daddr)),
       ntohs(pu->dest));
 

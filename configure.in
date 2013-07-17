@@ -1,12 +1,12 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-PACKAGE=BladeSniffer
+PACKAGE=bcsniffer
 VERSIN=0.1.0
 
 AC_PREREQ(2.68)
-AC_INIT(PACKAGE, VERSION, xkdcc@163.com)
-AM_INIT_AUTOMAKE(BladeSniffer, 0.1.0)
+AC_INIT(PACKAGE, 2.0.0, xkdcc@163.com)
+AM_INIT_AUTOMAKE(bcsniffer, 2.0.0)
 AC_CONFIG_SRCDIR([src/bcsniffer.c])
 AC_CONFIG_HEADERS([config.h])
 

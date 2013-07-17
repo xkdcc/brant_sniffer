@@ -73,8 +73,8 @@ int get_protocol_name(int numProto) {
     perror("Analyse the protocol failed!");
     return -1;
   }
-  //printf("%s %s ", protocol->p_name, protocol->p_aliases[0]);
-  printf("%s ", protocol->p_name);
+
+  printf("%s \n", protocol->p_name);
   return 0;
 }
 
