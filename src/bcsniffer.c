@@ -125,7 +125,9 @@ struct node *head;
 struct node *search;         //(1)标识找到的位置 (2)用于开辟新节点的变量
 struct node *tail;           //尾指针始终指向最后一个节点
 
-Cmd_Opt opts[4];                 //有多少个需要设置的参数就有多少个opts
+// After get_command_line_option, all status should be TRUE
+//有多少个需要设置的参数就有多少个opts
+Cmd_Opt opts[4];
 
 void show_usage() {
   printf("\nUsage:./bcsniffer [Option] ... [Value]...\n"
@@ -157,7 +159,8 @@ int set_value_from_cmd(char *optarg, int *option_index, Cmd_Opt opts[]) {
       return -1;
     }
   }
-  else if (*option_index == 3 && optarg == NULL ) { // This is for -x, since no value request, so optarg should NULL
+  // This is for -x, since no value request, so optarg should NULL
+  else if (*option_index == 3 && optarg == NULL ) {
     opts[3].status = TRUE;
     opts[3].rightopt.print_data = TRUE;
     return 0;
@@ -172,16 +175,16 @@ int set_value_from_cmd(char *optarg, int *option_index, Cmd_Opt opts[]) {
   switch (*option_index) {
   case 0:
     if (FALSE == opts[0].status) {
-      if (!strncmp("TCP", optarg, 3)) {
+      if (!strncmp("TCP", optarg, strlen("TCP"))) {
         opts[0].rightopt.protocol = TCP;
       }
-      else if (!strncmp("UDP", optarg, 3)) {
+      else if (!strncmp("UDP", optarg, strlen("UDP"))) {
         opts[0].rightopt.protocol = UDP;
       }
-      else if (!strncmp("ICMP", optarg, 4)) {
+      else if (!strncmp("ICMP", optarg, strlen("ICMP"))) {
         opts[0].rightopt.protocol = ICMP;
       }
-      else if (!strncmp("ALLPROTOCOL", optarg, 20)) {
+      else if (!strncmp("ALLPROTOCOL", optarg, strlen("ALLPROTOCOL"))) {
         opts[0].rightopt.protocol = ALLPROTOCOL;
       }
       else {
@@ -326,9 +329,9 @@ int get_command_line_option(int argc, char *argv[], Boolean *pNoopt) {
         exit(1);
       }
       break;
-    case '?': /*每个程序都需要*/        //如果遇到不匹配的短选项或者‘？’
-    case 'h': /*每个程序都需要*/
-    default: /*每个程序都需要*/
+    case '?': /*This case is necessary*/
+    case 'h': /*This case is necessary*/
+    default:  /*This case is necessary*/
       show_usage();
       exit(1);
     }
@@ -359,30 +362,6 @@ void before_interupt(int signo) {
   exit(0);
 }
 
-//输出调试信息
-void print_tcp_in_detail(const int len, struct ip *p1, struct iphdr *p2,
-    struct tcphdr *p3) {
-  printf("r:%d\n", len);
-  printf("ether_header:%ld\n", (long int) sizeof(struct ether_header));
-  printf("ethhdr:%ld\n", (long int) sizeof(struct ethhdr));
-  printf("ip->ip_len:%d\n", p1->ip_len);
-  printf("ntohs(ip->ip_len):%d\n", ntohs(p1->ip_len));
-  printf("iph->tot_len:%d\n", p2->tot_len);
-  printf("ntohs(piph->tot_len):%d\n", ntohs(p2->tot_len));
-  printf("ptcp->doff:%d\n", p3->doff);
-}
-
-//输出调试信息
-void print_udp_in_detail(const int len, struct ip *p1, struct iphdr *p2) {
-  printf("r:%d\n", len);
-  printf("ether_header:%ld\n", (long int) sizeof(struct ether_header));
-  printf("ethhdr:%ld\n", (long int) sizeof(struct ethhdr));
-  printf("ip->ip_len:%d\n", p1->ip_len);
-  printf("ntohs(ip->ip_len):%d\n", ntohs(p1->ip_len));
-  printf("piph->tot_len:%d\n", p2->tot_len);
-  printf("ntohs(piph->tot_len):%d\n", ntohs(p2->tot_len));
-}
-
 int main(int argc, char *argv[]) {
   struct sockaddr_in addr;
   struct ether_header *peth;    //以太网帧报头指针
@@ -390,13 +369,13 @@ int main(int argc, char *argv[]) {
   struct ip *pip;
   struct iphdr *piph;           //IP头结构
 
-  Boolean noopt = FALSE;          //记录程序执行是否带有命令行参数,没有则按照默认参数配置执行
+  Boolean noopt = FALSE;        //记录程序执行是否带有命令行参数,没有则按照默认参数配置执行
 
-  int proto = DEFAULTPROTO_ALL;   //在主函数中使用局部变量代替全局变量opts,
-                                  //一是为了书写方便,
-                                  //二是避免全局变量的使用,虽然opts在赋值后应该不会再有代码修改它,但是为了以防万一.
-  unsigned long interval = 10;    //记录输出链表内容的次数间隔
-  unsigned long count = 0;        //记录抓包的次数
+  int cmd_option_protocol = DEFAULTPROTO_ALL; //在主函数中使用局部变量代替全局变量opts,
+                                //一是为了书写方便,
+                                //二是避免全局变量的使用,虽然opts在赋值后应该不会再有代码修改它,但是为了以防万一.
+  unsigned long cmd_option_interval = 10;  //记录输出链表内容的次数间隔
+  unsigned long count = 0;      //记录抓包的次数
 
   int sock;                     //建立socket连接
   int r;                        //recv返回值
@@ -417,20 +396,20 @@ int main(int argc, char *argv[]) {
 
   //输出参数分析的最终结果
   if (TRUE == noopt) {
-    printf("\nnone opt get, assign default value:\n");
+    printf("\nNo option got, use default value:\n");
   }
   else if (FALSE == noopt) {
-    printf("\nopt  value list below:\n");
+    printf("\nCommand line options list below:\n");
   }
 
   printf("protocol:%d    \n", opts[0].rightopt.protocol);
-  printf("interval:%ld    \n", opts[1].rightopt.interval);
+  printf("cmd_option_interval:%ld    \n", opts[1].rightopt.interval);
   printf("count:%ld\n", opts[2].rightopt.endcount);
   printf("display:%d\n", opts[3].rightopt.print_data);
   printf("\n");
 
-  proto = opts[0].rightopt.protocol;
-  interval = opts[1].rightopt.interval;
+  cmd_option_protocol = opts[0].rightopt.protocol;
+  cmd_option_interval = opts[1].rightopt.interval;
   count = 0;
   len = sizeof(addr);
 
@@ -479,35 +458,26 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
+
     ptemp = buf;                            //初始化指针ptemp
     peth = (struct ether_header *) ptemp;
     ptype = ntohs(peth->ether_type);        //从以太网帧获得协议名称
 
     //Only print ARP/RARP if ALLPROTOCOL | DEFAULTPROTO_ALL
     if (((ptype == ETHERTYPE_ARP) || (ptype == ETHERTYPE_REVARP))
-        && ((opts[0].rightopt.protocol == ALLPROTOCOL)
-            || (opts[0].rightopt.protocol == DEFAULTPROTO_ALL))) {
-      catch_count_in_alarm++;
+        && ((cmd_option_protocol == ALLPROTOCOL)
+            || (cmd_option_protocol == DEFAULTPROTO_ALL))) {
       parph = (struct ether_arp *) (ptemp + sizeof(struct ether_header));
+      catch_count_in_alarm++;
       printf("\n[%3ld] ", ++count);
       print_time();
       printf("Package total length:[%d Byte] ", r);
       print_arp_rarp(parph, ptype);
     }
-    else if (ptype == ETHERTYPE_IP) {       //如果是IP数据包
+    else if (ptype == ETHERTYPE_IP) {
       ptemp += sizeof(struct ether_header); //指针后移ether_header的长度，4字节
       pip = (struct ip *) ptemp;
       piph = (struct iphdr *) ptemp;        //piph指向ip层的头
-      //Print IP header information if not specify protocol from cmd line, like
-      //TCP/UDP...
-      if (opts[0].rightopt.protocol == ALLPROTOCOL
-          || opts[0].rightopt.protocol == DEFAULTPROTO_ALL) {
-        catch_count_in_alarm++;
-        printf("\n[%3ld] ", ++count);
-        print_time();
-        printf("Package total length:[%d Byte] ", r);
-        printf_ip_header(piph);
-      }
 
       //ihl即IP header length
       //<<2相当于乘以4，为什么ptemp要移到ihl*4的位置？
@@ -518,9 +488,9 @@ int main(int argc, char *argv[]) {
 
       //根据不同协议判断指针类型
       if (piph->protocol == IPPROTO_TCP
-          && (opts[0].rightopt.protocol == TCP
-              || opts[0].rightopt.protocol == ALLPROTOCOL
-              || opts[0].rightopt.protocol == DEFAULTPROTO_ALL)) {
+          && (cmd_option_protocol == TCP
+              || cmd_option_protocol == ALLPROTOCOL
+              || cmd_option_protocol == DEFAULTPROTO_ALL)) {
 
         ret = search_and_add_node(piph, ptemp, (struct node **) &search,
             (struct node **) &head, (struct node **) &tail, r, IPPROTO_TCP);
@@ -528,96 +498,84 @@ int main(int argc, char *argv[]) {
           printf("[ERR] search_and_add_node failed. Protocol: TCP.\n\n");
           exit(-1);
         }
-        if (opts[0].rightopt.protocol == TCP) {
-          catch_count_in_alarm++;
-          printf("\n[%3ld] ", ++count);
-          print_time();
-          printf("Package total length:[%d Byte] ", r);
-        }
+        catch_count_in_alarm++;
+        printf_ip_header(piph, ++count, r);
         printf_tcp(ptemp, piph, opts[3].rightopt.print_data);
       }
       else if (piph->protocol == IPPROTO_UDP
-          && (opts[0].rightopt.protocol == UDP
-              || opts[0].rightopt.protocol == ALLPROTOCOL
-              || opts[0].rightopt.protocol == DEFAULTPROTO_ALL)) {
+          && (cmd_option_protocol == UDP
+              || cmd_option_protocol == ALLPROTOCOL
+              || cmd_option_protocol == DEFAULTPROTO_ALL)) {
         ret = search_and_add_node(piph, ptemp, (struct node **) &search,
             (struct node **) &head, (struct node **) &tail, r, IPPROTO_UDP);
         if (ret == -1) {
           printf("[ERR] search_and_add_node failed. Protocol: UDP.\n\n");
           exit(-1);
         }
-        if (opts[0].rightopt.protocol == UDP) {
-          catch_count_in_alarm++;
-          printf("\n[%3ld] ", ++count);
-          print_time();
-          printf("Package total length:[%d Byte] ", r);
-        }
+        catch_count_in_alarm++;
+        printf_ip_header(piph, ++count, r);
         printf_udp(ptemp, piph, opts[3].rightopt.print_data);
       }
       else if (piph->protocol == IPPROTO_ICMP
-          && (opts[0].rightopt.protocol == ICMP
-              || opts[0].rightopt.protocol == ALLPROTOCOL
-              || opts[0].rightopt.protocol == DEFAULTPROTO_ALL)) {
+          && (cmd_option_protocol == ICMP
+              || cmd_option_protocol == ALLPROTOCOL
+              || cmd_option_protocol == DEFAULTPROTO_ALL)) {
         ret = search_and_add_node(piph, ptemp, (struct node **) &search,
             (struct node **) &head, (struct node **) &tail, r, -1);
         if (ret == -1) {
           printf("[ERR] search_and_add_node failed. Protocol: ICMP.\n\n");
           exit(-1);
         }
-        if (opts[0].rightopt.protocol == ICMP) {
-          catch_count_in_alarm++;
-          printf("\n[%3ld] ", ++count);
-          print_time();
-          printf("Package total length:[%d Byte] ", r);
-        }
+        catch_count_in_alarm++;
+        printf_ip_header(piph, ++count, r);
         printf("ICMP:%s \n", inet_ntoa(*(struct in_addr*) &(piph->saddr)));
       }
       else if (piph->protocol == IPPROTO_IGMP
-          && (opts[0].rightopt.protocol == IGMP
-              || opts[0].rightopt.protocol == ALLPROTOCOL
-              || opts[0].rightopt.protocol == DEFAULTPROTO_ALL)) {
+          && (cmd_option_protocol == IGMP
+              || cmd_option_protocol == ALLPROTOCOL
+              || cmd_option_protocol == DEFAULTPROTO_ALL)) {
         ret = search_and_add_node(piph, ptemp, (struct node **) &search,
             (struct node **) &head, (struct node **) &tail, r, -1);
         if (ret == -1) {
           printf("[ERR] search_and_add_node failed. Protocol: IGMP.\n\n");
           exit(-1);
         }
-        if (opts[0].rightopt.protocol == IGMP) {
-          catch_count_in_alarm++;
-          printf("\n[%3ld] ", ++count);
-          print_time();
-          printf("Package total length:[%d Byte] ", r);
-        }
+        catch_count_in_alarm++;
+        printf_ip_header(piph, ++count, r);
         printf("IGMP \n");
       }
-      else if (opts[0].rightopt.protocol == ALLPROTOCOL
-          || opts[0].rightopt.protocol == DEFAULTPROTO_ALL) {
+      else if (cmd_option_protocol == ALLPROTOCOL
+          || cmd_option_protocol == DEFAULTPROTO_ALL) {
         ret = search_and_add_node(piph, ptemp, (struct node **) &search,
             (struct node **) &head, (struct node **) &tail, r, -1);
         if (ret == -1) {
           printf("[ERR] search_and_add_node failed. Protocol: Unknown.\n\n");
           exit(-1);
         }
+        catch_count_in_alarm++;
+        printf_ip_header(piph, ++count, r);
         printf("Unknown protocol %d\n", piph->protocol);
       }                   //end analyse, we can't go to next else.
 //      else {
 //
 //      }
-    } //else if (ptype == ETHERTYPE_IP) {       //如果是IP数据包
-    else if (opts[0].rightopt.protocol == ALLPROTOCOL
-        || opts[0].rightopt.protocol == DEFAULTPROTO_ALL) {
+    } //else if (ptype == ETHERTYPE_IP) {       //如果是IP协议数据包
+    else if (cmd_option_protocol == ALLPROTOCOL
+        || cmd_option_protocol == DEFAULTPROTO_ALL) {
+      catch_count_in_alarm++;
+      count++;
       printf("\nUnknown package,protocol type:%d\n", ptype);
     }
 
     //判断interval参数
-    if ((opts[1].rightopt.interval != 0)
-        && (count % opts[1].rightopt.interval == 0)) {
+    if ((cmd_option_interval != 0)
+        && (count % cmd_option_interval == 0)) {
       // Only traversal_list if we caught package (that is count !=0) and
       // the package match the protocol we specified.
       if (count != 0
-          && ((piph->protocol == (opts[0].rightopt.protocol)
-              || (opts[0].rightopt.protocol == ALLPROTOCOL)
-              || (opts[0].rightopt.protocol == DEFAULTPROTO_ALL)))) {
+          && ((piph->protocol == (cmd_option_protocol)
+              || (cmd_option_protocol == ALLPROTOCOL)
+              || (cmd_option_protocol == DEFAULTPROTO_ALL)))) {
         traversal_list(head, search);
         have_traversal_list_by_interval = TRUE;
       }
@@ -639,7 +597,11 @@ int main(int argc, char *argv[]) {
     //sleep(1);
     have_traversal_list_by_interval = FALSE;
     have_traversal_list_by_endcount = FALSE;
-  }                   //end for
+  }//end for(;;)
+
   printf("\n");
+
 }
+
+
 

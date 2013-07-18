@@ -85,7 +85,12 @@ void print_arp_rarp(struct ether_arp *p, unsigned int flag) {
 }
 
 //分析tos服务类型
-void printf_ip_header(struct iphdr *pip) {
+void printf_ip_header(struct iphdr *pip, int count, unsigned long r) {
+
+  printf("\n[%3ld] ", count);
+  print_time();
+  printf("Received total length:[%d Byte] ", r);
+
   printf("Protocol:[IP] ");    //为了和Time显示在同一行,更醒目
   printf("\nIP header:[%d Byte] ver:[%d] ttl:[%d] ", pip->ihl, pip->version,
       pip->ttl);
@@ -118,7 +123,7 @@ void printf_tcp(char *p, struct iphdr *piph, Boolean print_data) {
   pt = (struct tcphdr *) p;       //ptcp指向tcp头部
 
   /* inet_ntoa--------将网络二进制的数组转换成网络地址 */
-  printf("\n[%15s]:[Port: %-6d] -> ",
+  printf("[%15s]:[Port: %-6d] -> ",
       inet_ntoa(*(struct in_addr*) &(piph->saddr)), ntohs(pt->source));
   printf("[%15s]:[Port: %-6d] ", inet_ntoa(*(struct in_addr*) &(piph->daddr)),
       ntohs(pt->dest));
