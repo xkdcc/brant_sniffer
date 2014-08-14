@@ -27,3 +27,12 @@ bcsniffer [Option] ... [Value]...
          bcsniffer wont't stop by default if without -n.
 -       -x --display 
          display the TCP/UDP data in hex and printable characters. 
+
+###Welcome to my blog
+<a href="http://www.brantchen.com">![Brant's Blog](http://brant-public.qiniudn.com/site-Logo215x100-Brant%20Blog.png)</a>
+
+###Follow me on social networking 
+<a href="http://google.com/+BrantChenGo">![Brant's Google+](http://brant-public.qiniudn.com/googleplus1@2x.png)</a>
+<a href="http://cn.linkedin.com/pub/brant-chen/9/6a9/a03/">![Brant's LinkedIn](http://brant-public.qiniudn.com/linkedin@2x.png)</a>
+<a href="https://www.facebook.com/brantchen2008">![Brant's Facebook](http://brant-public.qiniudn.com/facebook@2x.png)</a>
+<a href="https://twitter.com/brantchen2008">![Brant's Twitter](http://brant-public.qiniudn.com/icon-twitter-2x.png)</a>
