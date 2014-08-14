@@ -1,6 +1,6 @@
 Brant_Sniffer (bcsniffer)
 ---
-Copyright 2012 - 2013 Brant Chen (xkdcc@163.com), All Rights Reserved 
+Copyright 2012 - 2013 Brant Chen (brantchen2008@gmail.com and xkdcc@163.com), All Rights Reserved 
 
 ##SYNOPSIS
 
